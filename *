@@ -1,0 +1,33 @@
+import httpx
+from config import ACCESS_TOKEN, PHONE_NUMBER_ID,WHATSAPP_API_VERSION
+
+API_URL = f"https://graph.facebook.com/{WHATSAPP_API_VERSION}/{PHONE_NUMBER_ID}/messages"
+HEADERS = {
+    "Authorization": f"Bearer {ACCESS_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+async def send_text_message(to: str, message: str):
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "text",
+        "text": {"body": message}
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.post(API_URL, headers=HEADERS, json=payload)
+        return response.json()
+
+async def send_template_message(to: str, template_name: str, lang_code="en_US"):
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "template",
+        "template": {
+            "name": template_name,
+            "language": {"code": lang_code}
+        }
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.post(API_URL, headers=HEADERS, json=payload)
+        return response.json()
