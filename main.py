@@ -1,29 +1,55 @@
 from fastapi import FastAPI, Query, HTTPException, Request
-from typing import Optional
+from typing import Optional, Dict
+from config import flow_config
+
+from models import BookingData
+from datetime import datetime, timedelta
+import traceback
+
 import logging
 from whatsapp import (
     send_text_message,
     send_template_message,
-    send_template_message_with_no_params,   
-    send_flow_message
+    send_template_message_with_no_params,
+    send_flow_message,
+    send_language_selection_prompt
 )
 
 # Initialize FastAPI app
-app = FastAPI()
+app = FastAPI(title="WhatsApp Flow Testing API", version="1.0.0")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @app.get("/")
-def root():
+async def root() -> Dict:
+    """
+    Root endpoint for the WhatsApp Flow Testing Backend.
+
+    Returns:
+        Dict: Welcome message.
+    """
     return {"message": "WhatsApp Flow Testing Backend (No Webhook)"}
 
 @app.post("/send-text")
 async def send_text(
-    to: str = Query(..., description="WhatsApp number with country code"),
-    message: str = Query(..., description="Message body")
-):
+    to: str = Query(..., description="WhatsApp number with country code (e.g., +1234567890)"),
+    message: str = Query(..., description="Text message content")
+) -> Dict:
+    """
+    Send a text message via WhatsApp.
+
+    Args:
+        to (str): Recipient phone number with country code.
+        message (str): The text message content.
+
+    Returns:
+        Dict: JSON response from the WhatsApp API.
+
+    Raises:
+        HTTPException: If the message sending fails.
+    """
     try:
         return await send_text_message(to, message)
     except Exception as e:
@@ -31,28 +57,59 @@ async def send_text(
         raise HTTPException(status_code=500, detail="Failed to send text message")
 
 @app.post("/send-template-no-params")
-async def send_template_(
+async def send_template_no_params(
     to: str = Query(..., description="WhatsApp number with country code"),
-    template_name: str = Query(..., description="Template name"),
-    lang_code: str = Query(..., description="Language code registered at Meta")):
-    
-    result = await send_template_message_with_no_params(to=to,template_name=template_name,lang_code=lang_code)
-    return result
+    template_name: str = Query(..., description="Approved WhatsApp template name"),
+    lang_code: str = Query(..., description="Language code registered at Meta (e.g., en_US)")
+) -> Dict:
+    """
+    Send a WhatsApp template message without parameters.
+
+    Args:
+        to (str): Recipient phone number with country code.
+        template_name (str): Name of the approved WhatsApp template.
+        lang_code (str): Language code for the template.
+
+    Returns:
+        Dict: JSON response from the WhatsApp API.
+
+    Raises:
+        HTTPException: If the template sending fails.
+    """
+    try:
+        return await send_template_message_with_no_params(to, template_name, lang_code)
+    except Exception as e:
+        logger.error(f"Error sending template without parameters: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to send template")
 
 @app.post("/send-template")
 async def send_template(
     to: str = Query(..., description="WhatsApp number with country code"),
-    template_name: str = Query(..., description="Template name"),
-    lang_code: str = Query(..., description="Language code registered at Meta"),
+    template_name: str = Query(..., description="Approved WhatsApp template name"),
+    lang_code: str = Query(..., description="Language code registered at Meta (e.g., en_US)"),
     expected_params: int = Query(0, description="Number of parameters the template expects"),
     param1: Optional[str] = Query(None, description="First template parameter"),
     param2: Optional[str] = Query(None, description="Second template parameter")
-):
-    # Prepare parameters based on expected count
-    parameters = []
-    if expected_params > 0:
-        parameters = [p for p in [param1, param2][:expected_params] if p is not None]
-    
+) -> Dict:
+    """
+    Send a WhatsApp template message with optional parameters.
+
+    Args:
+        to (str): Recipient phone number with country code.
+        template_name (str): Name of the approved WhatsApp template.
+        lang_code (str): Language code for the template.
+        expected_params (int): Number of parameters the template expects.
+        param1 (Optional[str]): First template parameter.
+        param2 (Optional[str]): Second template parameter.
+
+    Returns:
+        Dict: JSON response from the WhatsApp API.
+
+    Raises:
+        HTTPException: If parameter validation fails or the template sending fails.
+    """
+    parameters = [p for p in [param1, param2][:expected_params] if p is not None]
+
     try:
         result = await send_template_message(
             to=to,
@@ -61,17 +118,30 @@ async def send_template(
             parameters=parameters,
             expected_params=expected_params
         )
-        
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
         return result
-        
     except Exception as e:
         logger.error(f"Error sending template: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to send template")
 
+
+
+# =============================================================================LETS START FROM HERE===================================================
 @app.post("/webhook")
-async def webhook(request: Request):
+async def webhook(request: Request) -> Dict:
+    """
+    Handle incoming WhatsApp webhook events.
+
+    Args:
+        request (Request): FastAPI request object containing webhook data.
+
+    Returns:
+        Dict: Response indicating the action taken or error details.
+
+    Raises:
+        HTTPException: If webhook processing fails.
+    """
     try:
         data = await request.json()
         logger.info(f"Received webhook data: {data}")
@@ -94,25 +164,62 @@ async def webhook(request: Request):
                     flow_id="swahili_flow_id"
                 )
         return {"status": "no action taken"}
-        
     except Exception as e:
         logger.error(f"Webhook processing error: {str(e)}")
         return {"status": "error", "message": str(e)}
+
+# I want to create a button that gives a user language choice the select a given flow 
+import random
+
+def get_mocked_language_choice():
+    return random.choice(["swahili", "english"])
+
+
+
+
+
+
+@app.post("/send-buttons")
+async def buttons(to: str = Query(..., description="Recipient's WhatsApp number")):
+    # Step 1: Properly validate phone number (e.g., must be digits only and correct length)
+    if not to.isdigit() or len(to) < 10:
+        raise HTTPException(status_code=400, detail="Invalid phone number format")
+
+    recipient = to
+
+    # Step 2: Send the language selection prompt (button template)
+    await send_language_selection_prompt(to=recipient,text="Please select a language\nTatadhali chagua Lugha")
+
+    # Step 3: Wait for a language selection (here we mock it)
+    language = get_mocked_language_choice()
+
+    # Step 4: Trigger the flow based on selected language
+    return await trigger_language_flow(language, recipient)
+
+
+     
 
 @app.get("/send-language-choice")
 async def trigger_language_flow(
     language: str = Query(..., description="Language choice (english/swahili)"),
     recipient: str = Query(..., description="Recipient's WhatsApp number")
-):
+) -> Dict:
+    """
+    Trigger a WhatsApp flow message based on language selection.
+
+    Args:
+        language (str): Language choice ("english" or "swahili").
+        recipient (str): Recipient's WhatsApp number with country code.
+
+    Returns:
+        Dict: JSON response from the WhatsApp API.
+
+    Raises:
+        HTTPException: If the language is invalid or the flow message fails.
+    """
     language = language.lower()
     
-    if language == "english":
-        flow_id = "713784581492733"
-        flow_name = "azam_v2"
-    elif language == "swahili":
-        flow_id = "552112574623758"
-        flow_name = "azam_v1"
-    else:
+    if language not in flow_config:
         raise HTTPException(
             status_code=400,
             detail="Invalid language parameter. Choose 'english' or 'swahili'"
@@ -121,12 +228,42 @@ async def trigger_language_flow(
     try:
         return await send_flow_message(
             to=recipient,
-            flow_name=flow_name,
-            flow_id=flow_id
+            flow_name=flow_config[language]["flow_name"],
+            flow_id=flow_config[language]["flow_id"]
         )
     except Exception as e:
-        logger.error(f"Error sending flow message: {str(e)}")
+        # logger.error(f"Error sending {language} flow message: {str(e)}")
+        print("Exception:", traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=f"Failed to send {language} flow message"
         )
+
+
+
+@app.post("/flow-callback")
+async def handle_flow_submission(request: Request):
+    data = await request.json()
+
+    # Extract user payload from flow
+    payload = data.get("payload")
+    if not payload:
+        return {"error": "Missing payload"}
+
+    # Auto-fill travel date (e.g., tomorrow)
+    travel_date = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # Simulate storing or processing booking
+    booking_info = {
+        **payload,
+        "travel_date": travel_date
+    }
+
+    # Log the booking or save to DB here
+    print("Booking received:", booking_info)
+
+    return {
+        "status": "success",
+        "message": "Booking received successfully",
+        "booking_details": booking_info
+    }        
