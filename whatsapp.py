@@ -14,10 +14,37 @@ async def send_text_message(to: str, message: str):
         "type": "text",
         "text": {"body": message}
     }
-    async with httpx.asyncclient() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.post(api_url, headers=headers, json=payload)
         return response.json()
 from typing import List, Optional
+
+# Just to test stuffs
+async def send_template_message_with_no_params(
+    to: str,
+    template_name: str,
+    lang_code: str
+): 
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "template",
+        "template": {
+            "name": template_name,
+            "language": {"code": lang_code}
+        }
+    }
+    async with httpx.AsyncClient() as client:
+            response = await client.post(
+                api_url,
+                headers=headers,
+                json=payload,
+                timeout=30.0
+            )
+            return response.json()
+
+
+
 
 async def send_template_message(
     to: str,
@@ -77,7 +104,7 @@ async def send_template_message(
         }]
 
     try:
-        async with httpx.asyncclient() as client:
+        async with httpx.AsyncClient() as client:
             response = await client.post(
                 api_url,
                 headers=headers,
@@ -86,7 +113,7 @@ async def send_template_message(
             )
             return response.json()
             
-    except exception as e:
+    except Exception as e:
         return {
             "error": {
                 "message": str(e),
@@ -128,7 +155,7 @@ async def send_flow_message(to: str, flow_name: str = "jenga survey",flow_id: st
         }
     }
 
-    async with httpx.asyncclient() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.post(api_url, headers=headers, json=payload)
         return response.json()
 

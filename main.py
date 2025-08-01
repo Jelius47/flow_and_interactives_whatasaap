@@ -4,6 +4,7 @@ import logging
 from whatsapp import (
     send_text_message,
     send_template_message,
+    send_template_message_with_no_params,   
     send_flow_message
 )
 
@@ -28,6 +29,15 @@ async def send_text(
     except Exception as e:
         logger.error(f"Error sending text message: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to send text message")
+
+@app.post("/send-template-no-params")
+async def send_template_(
+    to: str = Query(..., description="WhatsApp number with country code"),
+    template_name: str = Query(..., description="Template name"),
+    lang_code: str = Query(..., description="Language code registered at Meta")):
+    
+    result = await send_template_message_with_no_params(to=to,template_name=template_name,lang_code=lang_code)
+    return result
 
 @app.post("/send-template")
 async def send_template(
