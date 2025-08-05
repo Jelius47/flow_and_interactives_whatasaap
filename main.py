@@ -1,6 +1,11 @@
-from fastapi import FastAPI, Query, HTTPException, Request
+from fastapi import FastAPI, Query, HTTPException, Request ,Response,status
 from typing import Optional, Dict
+
+import json
+
 from config import flow_config
+from fastapi.responses import JSONResponse
+from utils.security import Security
 
 from models import BookingData
 from datetime import datetime, timedelta
@@ -12,7 +17,8 @@ from whatsapp import (
     send_template_message,
     send_template_message_with_no_params,
     send_flow_message,
-    send_language_selection_prompt
+    send_language_selection_prompt,
+    register_business_encryption
 )
 
 # Initialize FastAPI app
@@ -128,6 +134,290 @@ async def send_template(
 
 
 # =============================================================================LETS START FROM HERE===================================================
+
+
+@app.post("/register-encryption")
+async def register():
+    return await register_business_encryption()
+
+
+from fastapi import FastAPI, Request, Response, status
+from fastapi.responses import JSONResponse
+import json
+
+@app.post("/flow-data")
+async def flow_data(request: Request):
+    """Flow data exchange endpoint with complete implementation."""
+    try:
+        data = await request.json()
+        encrypted_flow_data = data.get("encrypted_flow_data")
+        encrypted_aes_key = data.get("encrypted_aes_key")
+        initial_vector = data.get("initial_vector")
+
+        # Decrypt the incoming data
+        decrypted_data, aes_key, iv = Security.decrypt_request(
+            encrypted_flow_data_b64=encrypted_flow_data,
+            encrypted_aes_key_b64=encrypted_aes_key,
+            initial_vector_b64=initial_vector,
+        )
+        
+        print(f"\nDecrypted data: {decrypted_data}")
+        
+        # Handle health check (ping)
+        if decrypted_data.get("action") == "ping":
+            print("Ping received - Flow is active")
+            response = {
+                "data": {
+                    "status": "active",
+                },
+            }
+            encrypted_response = Security.encrypt_response(
+                response=response, aes_key=aes_key, iv=iv
+            )
+            return Response(
+                content=encrypted_response,
+                media_type="text/plain",
+                status_code=status.HTTP_200_OK,
+            )
+
+        # Handle INIT action - Flow initialization
+               
+        if decrypted_data.get("action") == "INIT":
+            flow_token = decrypted_data.get("flow_token")
+            print(f"Flow initialization - Token: {flow_token}")
+            
+            # Initialize any session data you need
+            initialize_flow_session(flow_token)
+            
+            # Return initial data with the screen property
+            response = {
+                "screen": "PERSONAL_INFO",  # Specify the first screen
+                "data": {
+                    "initialized": True,
+                    "welcome_message": "Welcome to our booking system!"
+                }
+            }
+            
+            encrypted_response = Security.encrypt_response(
+                response=response, aes_key=aes_key, iv=iv
+            )
+            return Response(
+                content=encrypted_response,
+                media_type="text/plain",
+                status_code=status.HTTP_200_OK,
+            )
+
+        # Handle screen navigation and data requests
+        current_screen = decrypted_data.get("screen")
+        action = decrypted_data.get("action")
+        flow_token = decrypted_data.get("flow_token")
+        
+        print(f"Current screen: {current_screen}, Action: {action}")
+
+        # AVAILABILITY Screen - Send dynamic data to frontend
+        if current_screen == "PERSONAL_INFO":
+            # Your backend logic to fetch available time slots
+            available_slots = get_available_time_slots(
+                route=decrypted_data.get("going_route"),
+                date=decrypted_data.get("going_date"),
+                passengers=decrypted_data.get("going_no_passengers")
+            )
+            
+            response = {
+                "screen": "AVAILABILITY",
+                "data": {
+                    "going_availability_slots": [
+            {
+              "id": "04_08_2025$14_00",
+              "title": "04-08-2025 at 14:00"
+            },
+            {
+              "id": "04_08_2025$16_00",
+              "title": "04-08-2025 at 16:00"
+            }
+          ]
+                }
+            }
+            
+        # SEATS Screen - Send seat categories and pricing
+        elif current_screen == "SEATS":
+            seat_categories = get_seat_categories()
+            response = {
+                "data": {
+                    "seat_categories": seat_categories
+                }
+            }
+            
+        # Handle data_exchange action (form submissions)
+        elif action == "data_exchange":
+            form_data = decrypted_data.get("data", {})
+            
+            if current_screen == "PERSONAL_INFO":
+                # Process travel details
+                trip_details = process_trip_details(form_data)
+                response = {
+                    "data": trip_details
+                }
+                
+            elif current_screen == "DETAILS":
+                # Process personal details and validate
+                validation_result = validate_personal_details(form_data)
+                if validation_result["valid"]:
+                    response = {
+                        "data": {
+                            "validation": "success"
+                        }
+                    }
+                else:
+                    response = {
+                        "data": {
+                            "validation": "failed",
+                            "errors": validation_result["errors"]
+                        }
+                    }
+                    
+            elif current_screen == "PAYMENT":
+                # Process payment and complete booking
+                booking_result = process_booking(form_data, flow_token)
+                response = {
+                    "data": {
+                        "booking_confirmation": booking_result
+                    }
+                }
+            else:
+                response = {"data": {}}
+                
+        # Handle BACK navigation
+        elif action == "BACK":
+            # You can update data when user goes back
+            response = {
+                "data": {
+                    "message": "Navigated back successfully"
+                }
+            }
+            
+        else:
+            # Default response for unhandled cases
+            response = {
+                "data": {},
+                "error_message": "Unknown action or screen"
+            }
+
+        # Encrypt and return response
+        encrypted_response = Security.encrypt_response(
+            response=response, aes_key=aes_key, iv=iv
+        )
+        
+        return Response(
+            content=encrypted_response,
+            media_type="text/plain",
+            status_code=status.HTTP_200_OK,
+        )
+        
+    except Exception as e:
+        print(f"Error processing flow data: {str(e)}")
+        return JSONResponse(
+            content={"error": "Internal server error"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+# Helper functions for your business logic
+def get_available_time_slots(route, date, passengers):
+    """Fetch available time slots from your database/service."""
+    # Example implementation
+    slots = [
+        {"id": "04_08_2025$08_00", "title": "04-08-2025 at 08:00"},
+        {"id": "04_08_2025$12_00", "title": "04-08-2025 at 12:00"},
+        {"id": "04_08_2025$16_00", "title": "04-08-2025 at 16:00"},
+        {"id": "04_08_2025$20_00", "title": "04-08-2025 at 20:00"},
+    ]
+    
+    # Filter based on your business logic
+    # available_slots = query_database(route, date, passengers)
+    
+    return slots
+
+
+def get_seat_categories():
+    """Get available seat categories with pricing."""
+    return [
+        {"id": "economy", "title": "🌟 Economy Class", "price": 50000},
+        {"id": "vip", "title": "💺 VIP Class", "price": 75000},
+        {"id": "first_class", "title": "👑 First Class", "price": 100000}
+    ]
+
+
+def process_trip_details(form_data):
+    """Process and validate trip details."""
+    print(f"Processing trip details: {form_data}")
+    
+    # Your validation logic here
+    trip_type = form_data.get("trip_type")
+    going_route = form_data.get("going_route")
+    
+    # Return processed data
+    return {
+        "processed": True,
+        "trip_summary": f"{trip_type} trip on {going_route}"
+    }
+
+
+def validate_personal_details(form_data):
+    """Validate personal details form."""
+    errors = []
+    
+    # Example validation
+    if not form_data.get("email input"):
+        errors.append("Email is required")
+    
+    if not form_data.get("phone input"):
+        errors.append("Phone number is required")
+    
+    return {
+        "valid": len(errors) == 0,
+        "errors": errors
+    }
+
+
+def process_booking(form_data, flow_token):
+    """Process the final booking."""
+    # Create booking in your system
+    booking_id = create_booking_in_database(form_data, flow_token)
+    
+    return {
+        "booking_id": booking_id,
+        "status": "confirmed",
+        "message": "Your booking has been confirmed!"
+    }
+
+
+def create_booking_in_database(form_data, flow_token):
+    """Create booking record in your database."""
+    # Your database logic here
+    # booking = Booking.create(...)
+    return "BK12345"  # Return booking ID
+
+
+def initialize_flow_session(flow_token):
+    """Initialize flow session data."""
+    # Store session data in your database or cache
+    session_data = {
+        "flow_token": flow_token,
+        "created_at": datetime.now(),
+        "status": "initialized",
+        "user_data": {}
+    }
+    
+    # Save to database/cache
+    # SessionStore.create(flow_token, session_data)
+    print(f"Flow session initialized: {flow_token}")
+    
+    return session_data
+
+
+
+
 @app.post("/webhook")
 async def webhook(request: Request) -> Dict:
     """
@@ -229,7 +519,8 @@ async def trigger_language_flow(
         return await send_flow_message(
             to=recipient,
             flow_name=flow_config[language]["flow_name"],
-            flow_id=flow_config[language]["flow_id"]
+            flow_id=flow_config[language]["flow_id"],
+            flow_token=flow_config["token"]
         )
     except Exception as e:
         # logger.error(f"Error sending {language} flow message: {str(e)}")

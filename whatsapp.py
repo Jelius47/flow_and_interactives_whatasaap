@@ -1,9 +1,12 @@
 
 from typing import List, Optional, Dict
 from config import access_token, phone_number_id, whatsapp_api_version
+from utils.security import generate_rsa_key_pair,save_key_to_file
 import httpx
+from fastapi import HTTPException
+
 # Base URL for WhatsApp API
-API_URL = f"https://graph.facebook.com/{whatsapp_api_version}/{phone_number_id}/messages"
+API_URL = f"https://graph.facebook.com/{whatsapp_api_version}/{phone_number_id}"
 
 # Headers for API requests
 HEADERS = {
@@ -33,7 +36,7 @@ async def send_text_message(to: str, message: str) -> Dict:
     }
 
     async with httpx.AsyncClient() as client:
-        response = await client.post(API_URL, headers=HEADERS, json=payload)
+        response = await client.post(f"{API_URL}/messages", headers=HEADERS, json=payload)
         return response.json()
 
 async def send_template_message_with_no_params(
@@ -66,7 +69,7 @@ async def send_template_message_with_no_params(
     }
 
     async with httpx.AsyncClient() as client:
-        response = await client.post(API_URL, headers=HEADERS, json=payload, timeout=30.0)
+        response = await client.post(f"{API_URL}/messages", headers=HEADERS, json=payload, timeout=30.0)
         return response.json()
 
 
@@ -191,6 +194,7 @@ async def send_flow_message(
     to: str,
     flow_name: str = "jenga survey",
     flow_id: str = "",
+    flow_token: str =""
     
 ) -> Dict:
     """
@@ -235,17 +239,47 @@ async def send_flow_message(
                 "parameters": {
                     "flow_id": flow_id,
                     "flow_cta": "Start Survey",
-                    "flow_message_version": "3"
+                    "flow_message_version": "3",
+                    "flow_token":flow_token
                 }
             }
         }
     }
 
     async with httpx.AsyncClient() as client:
-        response = await client.post(API_URL, headers=HEADERS, json=payload)
+        response = await client.post(f"{API_URL}/messages", headers=HEADERS, json=payload)
         if response.status_code != 200:
             print("Failed response:", response.status_code, response.text)
             response.raise_for_status()  # This will show detailed error
 
         return response.json()
+
+# register business encryption
+
+async def register_business_encryption():
+    public_key, private_key = generate_rsa_key_pair()
+    
+    # save the keys into loacalfiles
+    save_key_to_file(public_key, "public.pem")
+    save_key_to_file(private_key, "private.pem")
+
+    url = f"{API_URL}/{phone_number_id}/whatsapp_business_encryption"
+    data = {
+        "business_public_key": public_key
+    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(url, data=data, headers=HEADERS)
+
+    
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+
+    return {
+        "success": True,
+        "meta_response": response.json(),
+        "public_key": public_key,
+        "private_key": private_key
+    }
 

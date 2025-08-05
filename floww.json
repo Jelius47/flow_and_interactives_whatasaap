@@ -1,0 +1,394 @@
+{
+  "routing_model": {
+    "BINAFSI": [
+      "MAWASILIANO"
+    ],
+    "MAWASILIANO": [
+      "USAFIRI"
+    ],
+    "USAFIRI": [
+      "BOTI"
+    ],
+    "BOTI": [
+      "MALIPO"
+    ],
+    "MALIPO": []
+  },
+  "data_api_version": "3.0",
+  "version": "7.2",
+  "screens": [
+    {
+      "id": "BINAFSI",
+      "title": "Taarifa Zako Binafsi",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "flow_path",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "Tafadhari andika taarifa zako binafsi:"
+              },
+              {
+                "type": "TextInput",
+                "label": "Jina la kwanza",
+                "name": "jina_la_kwanza",
+                "required": true,
+                "input-type": "text"
+              },
+              {
+                "type": "TextInput",
+                "label": "Jina la kati",
+                "name": "jina_la_kati",
+                "required": true,
+                "input-type": "text"
+              },
+              {
+                "type": "TextInput",
+                "label": "Jina la mwisho",
+                "name": "jina_la_mwisho",
+                "required": true,
+                "input-type": "text"
+              },
+              {
+                "type": "Dropdown",
+                "label": "Jinsia",
+                "required": true,
+                "name": "jinsia",
+                "data-source": [
+                  {
+                    "id": "ME",
+                    "title": "Mwanaume (ME)"
+                  },
+                  {
+                    "id": "KE",
+                    "title": "Mwanamke (KE)"
+                  }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "Endelea",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "MAWASILIANO"
+                  },
+                  "payload": {
+                      
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "MAWASILIANO",
+      "title": "Taarifa za Uraia na Mawasiliano",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "flow_path",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "Tafadhari andika taarifa zako za uraia na mawasiliano:-"
+              },
+              {
+                "type": "Dropdown",
+                "label": "Uraia",
+                "required": true,
+                "name": "uraia",
+                "data-source": [
+                  {
+                    "id": "TZ",
+                    "title": "Mtanzania (TZ)"
+                  },
+                  {
+                    "id": "MG",
+                    "title": "Mgeni"
+                  }
+                ]
+              },
+              {
+                "type": "TextInput",
+                "label": "Namba ya simu",
+                "name": "namba_ya_simu",
+                "required": true,
+                "input-type": "text"
+              },
+              {
+                "type": "TextInput",
+                "label": "Barua pepe",
+                "name": "barua_pepe",
+                "required": false,
+                "input-type": "email"
+              },
+              {
+                "type": "Footer",
+                "label": "Endelea",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "USAFIRI"
+                  },
+                  "payload": {}
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "USAFIRI",
+      "title": "Taarifa za Usafiri",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "flow_path",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "Tafadhari andika taarifa zako za usafiri:-"
+              },
+              {
+                "type": "Dropdown",
+                "label": "Aina ya safari",
+                "required": true,
+                "name": "aina_ya_usafiri",
+                "data-source": [
+                  {
+                    "id": "kwenda",
+                    "title": "Kwenda"
+                  },
+                  {
+                    "id": "Kwenda_na_kurudi",
+                    "title": "Kwenda na kurudi"
+                  }
+                ]
+              },
+              {
+                "type": "Dropdown",
+                "label": "Uelekeo wa safari",
+                "required": true,
+                "name": "uelekeo",
+                "data-source": [
+                  {
+                    "id": "DAR_ZNZ",
+                    "title": "Dar es salaam - Zanzibar"
+                  },
+                  {
+                    "id": "ZNZ_DAR",
+                    "title": "Zanzibar - Dar es salaam"
+                  },
+                  {
+                    "id": "ZNZ_PEM",
+                    "title": "Zanzibar - Pemba"
+                  },
+                  {
+                    "id": "PEM_ZNZ",
+                    "title": "Pemba - Zanzibar"
+                  },
+                  {
+                    "id": "PEM_TAN",
+                    "title": "Pemba - Tanga"
+                  },
+                  {
+                    "id": "TAN_PEM",
+                    "title": "Tanga - Pemba"
+                  }
+                ]
+              },
+              {
+                "type": "TextInput",
+                "name": "idadi_ya_wasafiri",
+                "label": "Idadi ya wasafiri",
+                "required": true,
+                "input-type": "number"
+              },
+              {
+                "type": "DatePicker",
+                "label": "Tarehe ya kusafiri",
+                "required": true,
+                "name": "tarehe_ya_kusafiri"
+              },
+              {
+                "type": "Footer",
+                "label": "Endelea",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "BOTI"
+                  },
+                  "payload": {}
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "BOTI",
+      "title": "Taarifa za Boti na Wasafiri",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "flow_path",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "Tafadhari chagua taarifa za boti ambayo ungependa kusafiria:-"
+              },
+              {
+                "type": "Dropdown",
+                "label": "Boti ya kusafiria",
+                "required": true,
+                "name": "boti_ya_kusafiria",
+                "data-source": [
+                  {
+                    "id": "KILI_07",
+                    "title": "Kilimanjaro 07"
+                  },
+                  {
+                    "id": "KILI_08",
+                    "title": "Kilimanjaro 08"
+                  }
+                ]
+              },
+              {
+                "type": "Dropdown",
+                "label": "Daraja la kusafiria",
+                "required": true,
+                "name": "daraja_la_kusafiria",
+                "data-source": [
+                  {
+                    "id": "ECO",
+                    "title": "Economy"
+                  },
+                  {
+                    "id": "VIP",
+                    "title": "VIP"
+                  },
+                  {
+                    "id": "ROY",
+                    "title": "Royal"
+                  }
+                ]
+              },
+              {
+                "type": "TextSubheading",
+                "text": "Tafadhari andika majina ya watu wengine wanaosafiri na wengine"
+              },
+              {
+                "type": "TextArea",
+                "label": "Wasafiri wengine",
+                "required": false,
+                "name": "wasafiri_wengine"
+              },
+              {
+                "type": "Footer",
+                "label": "Endelea",
+                "on-click-action": {
+                  "name": "navigate",
+                  "next": {
+                    "type": "screen",
+                    "name": "MALIPO"
+                  },
+                  "payload": {}
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "MALIPO",
+      "title": "Taarifa za malipo",
+      "data": {},
+      "terminal": true,
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "flow_path",
+            "children": [
+              {
+                "type": "TextSubheading",
+                "text": "Tafadhari chagua na andika taarifa zako za malipo:-"
+              },
+              {
+                "type": "Dropdown",
+                "label": "Aina ya malipo",
+                "required": true,
+                "name": "aina_ya_malipo",
+                "data-source": [
+                  {
+                    "id": "SIMU",
+                    "title": "Lipa kwa simu"
+                  },
+                  {
+                    "id": "KADI",
+                    "title": "Lipa kwa kadi"
+                  }
+                ]
+              },
+              {
+                "type": "TextInput",
+                "label": "Namba ya malipo",
+                "name": "namba_ya_malipo",
+                "required": true,
+                "input-type": "text"
+              },
+              {
+                "type": "Footer",
+                "label": "Maliza na Tuma",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": {
+                    "jina_la_kwanza": "${screen.BINAFSI.jina_la_kwanza}",
+                    "jina_la_kati": "${screen.BINAFSI.jina_la_kati}",
+                    "jina_la_mwisho": "${screen.BINAFSI.jina_la_mwisho}",
+                    "jinsia": "${screen.BINAFSI.jinsia}",
+                    "uraia": "${screen.MAWASILIANO.uraia}",
+                    "namba_ya_simu": "${screen.MAWASILIANO.namba_ya_simu}",
+                    "barua_pepe": "${screen.MAWASILIANO.barua_pepe}",
+                    "aina_ya_usafiri": "${screen.USAFIRI.aina_ya_usafiri}",
+                    "uelekeo": "${screen.USAFIRI.uelekeo}",
+                    "idadi_ya_wasafiri": "${screen.USAFIRI.idadi_ya_wasafiri}",
+                    "tarehe_ya_kusafiri": "${screen.USAFIRI.tarehe_ya_kusafiri}",
+                    "boti_ya_kusafiria": "${screen.BOTI.boti_ya_kusafiria}",
+                    "daraja_la_kusafiria": "${screen.BOTI.daraja_la_kusafiria}",
+                    "wasafiri_wengine": "${screen.BOTI.wasafiri_wengine}",
+                    "aina_ya_malipo": "${form.aina_ya_malipo}",
+                    "namba_ya_malipo": "${form.namba_ya_malipo}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

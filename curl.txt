@@ -1,1 +1,0 @@
-{'messaging_product': 'whatsapp', 'to': '25568971266', 'type': 'template', 'template': {'name': 'choose_language', 'language': {'code': 'en_US'}, 'components': [{'type': 'body', 'parameters': [{'type': 'text', 'text': 'jelius'}]}]}}

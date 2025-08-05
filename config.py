@@ -9,5 +9,6 @@ whatsapp_api_version=os.getenv("WHATSAPP_API_VERSION")
 
 flow_config = {
         "english": {"flow_id": "713784581492733", "flow_name": "azam_v2"},
-        "swahili": {"flow_id": "552112574623758", "flow_name": "azam_v1"}
+        "swahili": {"flow_id": "552112574623758", "flow_name": "azam_v1"},
+        "flow_token": {"token":"flows-builder-b28d270e"}
     }
