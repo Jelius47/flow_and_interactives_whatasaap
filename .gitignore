@@ -2,3 +2,6 @@
 __pycache__/*.pyc
 # Cryptographic keys
 *.pem
+
+# Curl command files (may contain sensitive tokens)
+curl*
