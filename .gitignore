@@ -5,3 +5,4 @@ __pycache__/*.pyc
 
 # Curl command files (may contain sensitive tokens)
 curl*
+ 
