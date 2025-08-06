@@ -340,19 +340,26 @@ async def flow_data(request: Request):
                 if validation_result["valid"]:
                     # Store personal details in session
                     update_flow_session(flow_token, {"personal_details": form_data})
-           
-                    response = {
-                        "screen": "PAYMENT",
-                        "data": {
-                            "booking_confirmation": 
-                        {
-                            "booking_id": "7436rjfd",
-                            "status": "paid",
-                            "message": "Thanks"
+                    if form_data.get("trip_type")== "round_trip":
+                        response = {
+                            "screen": "RETURN_DETAILS",
+                            "data":{
+                                "validation":"success"
+                            }
+                        }
+                    else:           
+                        response = {
+                            "screen": "PAYMENT",
+                            "data": {
+                                "booking_confirmation": 
+                            {
+                                "booking_id": "7436rjfd",
+                                "status": "paid",
+                                "message": "Thanks"
 
+                            }
+                            }
                         }
-                        }
-                    }
                 else:
                     response = {
                         "screen": "DETAILS",
@@ -365,7 +372,25 @@ async def flow_data(request: Request):
                             
                         }
                     }
-                
+            elif current_screen == "RETURN_DETAILS":
+                # Validate personal details
+                validation_result = validate_personal_details(form_data)
+                if validation_result["valid"]:
+                    # Store personal details in session
+                    update_flow_session(flow_token, {"personal_details": form_data})
+                    response = {
+                            "screen": "PAYMENT",
+                            "data": {
+                                "booking_confirmation": 
+                            {
+                                "booking_id": "7436rjfd",
+                                "status": "paid",
+                                "message": "Thanks"
+
+                            }
+                            }
+                        }
+
             elif current_screen == "PAYMENT":
                 # Process payment and complete booking
                 booking_result = process_booking(form_data, flow_token)
